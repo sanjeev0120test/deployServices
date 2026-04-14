@@ -1,6 +1,8 @@
 # deployServices
 
-**Production-grade microservices deployment project** built for hands-on practice with containerization, orchestration, observability, and CI/CD. Three independent stateless microservices — each in a different framework — ship with a full Docker Compose stack, Kubernetes manifests, Helm charts, Terraform IaC, GitHub Actions pipelines, and an end-to-end observability layer (traces, metrics, logs).
+An open-source, end-to-end **microservices deployment reference architecture** that takes three independent REST APIs — built with Fastify (TypeScript), Next.js (React), and FastAPI (Python) — from source code through containerization, orchestration, observability, and automated delivery. The entire stack runs locally on a single machine and identically in CI/CD, demonstrating how production infrastructure patterns (multi-stage Docker builds, Helm-managed Kubernetes, distributed tracing, centralized logging, vulnerability scanning, and GitOps-style image promotion) work together as a cohesive system.
+
+**What this project solves:** Most deployment tutorials cover one layer in isolation — a Dockerfile here, a Helm chart there. This project wires them all together into a working pipeline: push code → lint → test → build → scan → E2E verify → push to registry → update manifests. Every tool has a clear role, every configuration is explained, and every workflow is tested.
 
 > **Tested and validated on Windows 10/11 + Docker Desktop + Kind and on GitHub Actions (Ubuntu runners). Works on macOS with minimal adjustments ([see macOS note](#macos-note)).**
 
@@ -570,8 +572,33 @@ ghcr.io/sanjeev0120test/deployservices/fastify-service:latest
 1. **Fork** the repository on GitHub.
 2. Go to **Settings → Actions → General → Workflow permissions** → select **Read and write permissions**.
    - **Why:** The Deploy workflow needs `packages: write` to push images to GHCR and `contents: write` to auto-commit Helm values updates.
-3. Push to `main` or manually trigger workflows from the **Actions** tab.
-4. No secrets configuration needed — `GITHUB_TOKEN` is auto-provided by GitHub Actions with the permissions specified in each workflow file.
+3. No secrets configuration needed — `GITHUB_TOKEN` is auto-provided by GitHub Actions.
+
+**How to trigger workflows:**
+
+| Method | Command / Step | What Triggers |
+|--------|---------------|---------------|
+| **Push to main** | `git push origin main` | CI + Deploy + any path-matched workflows |
+| **Open a Pull Request** | Create PR targeting `main` | CI + any path-matched workflows |
+| **Manual (GitHub UI)** | Actions tab → select workflow → "Run workflow" → choose branch → click "Run workflow" | Any single workflow |
+| **Manual (GitHub CLI)** | `gh workflow run ci.yml --ref main` | Any single workflow |
+| **Manual (curl)** | See below | Any single workflow |
+
+```bash
+# Trigger any workflow manually via GitHub API (replace WORKFLOW_FILE and TOKEN)
+curl -X POST \
+  -H "Authorization: Bearer YOUR_GITHUB_TOKEN" \
+  -H "Accept: application/vnd.github+json" \
+  https://api.github.com/repos/OWNER/REPO/actions/workflows/WORKFLOW_FILE/dispatches \
+  -d '{"ref":"main"}'
+
+# Example: trigger CI workflow
+curl -X POST \
+  -H "Authorization: Bearer $GITHUB_TOKEN" \
+  -H "Accept: application/vnd.github+json" \
+  https://api.github.com/repos/sanjeev0120test/deployServices/actions/workflows/ci.yml/dispatches \
+  -d '{"ref":"main"}'
+```
 
 ---
 
