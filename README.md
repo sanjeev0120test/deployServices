@@ -92,7 +92,7 @@
 |---------|---------|-----------|----------|------|---------|
 | fastify-service | Node.js 20 (Alpine) | Fastify 5 | TypeScript 5 | 3001 | High-performance REST API — items CRUD |
 | nextjs-service | Node.js 20 (Alpine) | Next.js 15 (App Router) | TypeScript 5 | 3002 | Full-stack React + API routes — products CRUD |
-| fastapi-service | Python 3.12 (Slim) | FastAPI 0.115 + Uvicorn | Python 3.12 | 8000 | Async REST API — orders CRUD |
+| fastapi-service | Python 3.12 (Slim) | FastAPI 0.135 + Uvicorn | Python 3.12 | 8000 | Async REST API — orders CRUD |
 
 ### Observability
 
@@ -101,7 +101,7 @@
 | OpenTelemetry SDK | 1.30+ (JS) / 1.33 (Py) | Distributed tracing + metrics instrumentation inside each service |
 | OpenTelemetry Collector | 0.123.0 | Centralized OTLP receiver; batches and re-exports telemetry |
 | Prometheus | 3.3.0 | Time-series metrics store; scrapes `/metrics` endpoints every 15s |
-| prom-client (JS) / prometheus-fastapi-instrumentator (Py) | 15.x / 7.x | Per-service Prometheus client libraries exposing `/metrics` |
+| prom-client (JS) / prometheus-fastapi-instrumentator (Py) | 15.x / 7.1 | Per-service Prometheus client libraries exposing `/metrics` |
 | Grafana | 11.6.0 | Visualization layer; pre-provisioned with Prometheus + Loki datasources |
 | Loki | 3.4.2 | Log aggregation backend (TSDB storage, single-node) |
 | Fluent Bit | 4.0 | Lightweight log forwarder; collects Docker logs and pushes to Loki |
@@ -122,14 +122,16 @@
 
 | Tool | Role |
 |------|------|
-| GitHub Actions | CI pipeline (lint, test, build, scan, E2E) + CD pipeline (GHCR push, manifest update) |
+| GitHub Actions (5 workflows) | CI, CD, Helm validation, Dockerfile lint, dependency security audit |
 | GitHub Container Registry (GHCR) | OCI image registry; images tagged with git SHA + `latest` |
 | Trivy | Container image vulnerability scanning (CRITICAL + HIGH severity) |
+| Hadolint | Dockerfile best-practice linter (catches security/performance issues in Dockerfiles) |
+| pip-audit / npm audit | Dependency vulnerability scanning (catches CVEs in declared packages) |
 | ESLint 9 | Static analysis for TypeScript services |
 | Ruff | Fast Python linter (replaces flake8 + isort + pyupgrade) |
 | Vitest | Unit test runner for Fastify service |
 | Jest 29 + Testing Library | Unit test runner for Next.js service |
-| pytest 8 + pytest-asyncio | Async unit test runner for FastAPI service |
+| pytest 9 + pytest-asyncio | Async unit test runner for FastAPI service |
 
 ---
 
@@ -148,6 +150,8 @@
 | **Helm over raw manifests** | Parameterized deployments; `values.yaml` updated automatically by CD pipeline |
 | **Terraform (optional)** | Demonstrates GitOps-style IaC; same Helm chart, different deployment path |
 | **Multi-stage Dockerfiles** | Separates build dependencies from runtime; results in smaller, more secure images |
+| **Hadolint** | Only Dockerfile-specific linter; catches issues Trivy misses (layer ordering, missing USER, apt cleanup) |
+| **pip-audit + npm audit** | Catches CVEs at the dependency declaration level, before images are built; weekly schedule catches new disclosures |
 | **NGINX Ingress** | Most widely adopted K8s ingress controller; battle-tested, extensive documentation |
 
 ---
@@ -158,7 +162,10 @@
 deployServices/
 ├── .github/workflows/
 │   ├── ci.yml                        # CI: lint → test → build → scan → E2E
-│   └── deploy.yml                    # CD: build → push GHCR → update Helm values
+│   ├── deploy.yml                    # CD: build → push GHCR → update Helm values
+│   ├── helm-validate.yml             # Helm lint + template render + dry-run
+│   ├── docker-lint.yml               # Hadolint Dockerfile best-practice checks
+│   └── security-audit.yml            # npm audit + pip-audit (dependency CVEs)
 │
 ├── services/
 │   ├── fastify-service/
@@ -449,9 +456,33 @@ make k8s-e2e            # Against Kind Ingress   (localhost/fastify, /nextjs, /f
 
 ## CI/CD — GitHub Actions
 
-Both pipelines trigger on every push to `main` and support `workflow_dispatch` for manual runs.
+This project ships with **5 GitHub Actions workflows**, each serving a distinct purpose. All support `workflow_dispatch` for manual runs from the Actions tab.
 
-### CI Pipeline (`ci.yml`)
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         GitHub Actions Workflows                            │
+│                                                                             │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐       │
+│  │   ci.yml    │  │ deploy.yml  │  │helm-validate│  │ docker-lint │       │
+│  │             │  │             │  │    .yml     │  │    .yml     │       │
+│  │ lint→test→  │  │ build+push  │  │ helm lint   │  │ hadolint    │       │
+│  │ build→scan→ │  │ to GHCR →   │  │ + template  │  │ on all 3    │       │
+│  │ E2E        │  │ update Helm │  │ + dry-run   │  │ Dockerfiles │       │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘       │
+│                                                                             │
+│  ┌─────────────────────┐                                                    │
+│  │ security-audit.yml  │                                                    │
+│  │                     │                                                    │
+│  │ npm audit (2x)      │                                                    │
+│  │ pip-audit (1x)      │                                                    │
+│  │ + weekly schedule   │                                                    │
+│  └─────────────────────┘                                                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 1. CI Pipeline (`ci.yml`)
+
+**Why:** Validates that every code change passes linting, tests, builds, security scans, and end-to-end verification before it can be considered safe to deploy.
 
 **Triggers:** `push` to main, `pull_request` to main, `workflow_dispatch`
 
@@ -466,15 +497,17 @@ Both pipelines trigger on every push to `main` and support `workflow_dispatch` f
 └──────────┘     └──────────┘     └──────────┘     └──────────┘     └──────────┘
 ```
 
-| Stage | Job | What It Does |
-|-------|-----|--------------|
-| 1 | **Lint** (3x matrix) | Installs dependencies, runs ESLint (Node.js) or Ruff (Python) |
-| 2 | **Test** (3x matrix) | Runs Vitest, Jest, or pytest with full output |
-| 3 | **Build** (3x matrix) | Builds multi-stage Docker images, saves as tar artifacts |
-| 4 | **Scan** (3x matrix) | Loads built images, runs Trivy for CRITICAL/HIGH CVEs |
-| 5 | **E2E** | Loads all 3 images → `docker compose up` → health check loop → runs `tests/e2e/run.sh` |
+| Stage | Job | What It Does | Why |
+|-------|-----|--------------|-----|
+| 1 | **Lint** (3x matrix) | ESLint (Node.js) or Ruff (Python) | Catches syntax errors and code style violations before tests run |
+| 2 | **Test** (3x matrix) | Vitest, Jest, or pytest | Verifies business logic and CRUD operations work correctly |
+| 3 | **Build** (3x matrix) | Multi-stage Docker build, saves as tar artifact | Confirms Dockerfiles produce valid images; artifacts reused by scan + E2E |
+| 4 | **Scan** (3x matrix) | Trivy vulnerability scan (CRITICAL + HIGH) | Detects OS-level and library CVEs inside the built container images |
+| 5 | **E2E** | Docker Compose up → health check → full test suite | Validates all 3 services work together end-to-end in a real container environment |
 
-### CD Pipeline (`deploy.yml`)
+### 2. CD Pipeline (`deploy.yml`)
+
+**Why:** Automates the build-tag-push-update cycle so that every merge to `main` produces deployable container images in GHCR and updates the Helm chart to reference them. This is the foundation for GitOps-style continuous deployment.
 
 **Triggers:** `push` to main, `workflow_dispatch`
 
@@ -488,10 +521,10 @@ Both pipelines trigger on every push to `main` and support `workflow_dispatch` f
 └──────────────────────┘     └──────────────────────────┘
 ```
 
-| Stage | What It Does |
-|-------|--------------|
-| **Build & Push** (3x matrix) | Authenticates to GHCR via `GITHUB_TOKEN`, builds each service, pushes images tagged with `git SHA` + `latest` to `ghcr.io/<owner>/<repo>/<service>` |
-| **Update Helm Manifests** | Updates `helm/deploy-services/values.yaml` with new image tags, commits and pushes the change back to `main` |
+| Stage | What It Does | Why |
+|-------|--------------|-----|
+| **Build & Push** (3x matrix) | Builds each service, pushes to `ghcr.io/<owner>/<repo>/<service>` with git SHA + `latest` tags | Immutable image tags tied to specific commits enable reliable rollbacks |
+| **Update Helm Manifests** | Updates `values.yaml` with new image references, auto-commits to `main` | Keeps Helm chart always pointing to the latest validated images |
 
 **Image naming convention:**
 ```
@@ -499,12 +532,46 @@ ghcr.io/sanjeev0120test/deployservices/fastify-service:<git-sha>
 ghcr.io/sanjeev0120test/deployservices/fastify-service:latest
 ```
 
+### 3. Helm Chart Validation (`helm-validate.yml`)
+
+**Why:** A broken Helm chart means failed Kubernetes deployments. This workflow catches YAML syntax errors, missing template values, and invalid K8s resource definitions *before* they reach a cluster. It runs `helm lint --strict` (catches template warnings), `helm template` (renders all templates to verify no missing values), and `kubectl apply --dry-run=client` (validates generated YAML against the K8s API schema).
+
+**Triggers:** `push`/`pull_request` to main (when `helm/**` or `k8s/**` files change), `workflow_dispatch`
+
+| Step | What It Does | Why |
+|------|--------------|-----|
+| **Helm Lint** | `helm lint --strict` | Catches YAML formatting issues and template warnings |
+| **Template Render** | `helm template --debug` | Verifies all templates render without errors |
+| **Dry-run Install** | `kubectl apply --dry-run=client` on rendered output | Validates generated manifests against K8s API schema |
+
+### 4. Dockerfile Lint (`docker-lint.yml`)
+
+**Why:** Multi-stage Dockerfiles are a core part of this project. Hadolint catches security issues (running as root, missing `USER` directive), performance issues (unnecessary layers, missing `--no-cache`), and best-practice violations that could lead to bloated or insecure images. It is the industry-standard Dockerfile linter.
+
+**Triggers:** `push`/`pull_request` to main (when any `Dockerfile` changes), `workflow_dispatch`
+
+| Step | What It Does | Why |
+|------|--------------|-----|
+| **Hadolint** (3x matrix) | Lints each service's Dockerfile at `warning` threshold | Catches Dockerfile anti-patterns that Trivy (image scanner) cannot detect |
+
+### 5. Dependency Security Audit (`security-audit.yml`)
+
+**Why:** Trivy scans *built images* for CVEs, but dependency vulnerabilities are best caught *at the source* — in `package.json` / `requirements.txt`. `npm audit` checks the npm advisory database and `pip-audit` checks the Python Packaging Advisory Database (PyPA). This workflow also runs on a **weekly schedule** to catch newly disclosed CVEs even when no code changes.
+
+**Triggers:** `push`/`pull_request` to main (when dependency files change), `workflow_dispatch`, **weekly (Monday 08:00 UTC)**
+
+| Job | What It Does | Why |
+|-----|--------------|-----|
+| **npm audit** (2x matrix) | `npm audit` on fastify-service and nextjs-service | Detects known CVEs in JavaScript dependencies |
+| **pip-audit** | `pip-audit -r requirements.txt` on fastapi-service | Detects known CVEs in Python dependencies |
+
 ### Setting Up CI/CD for Your Fork
 
 1. **Fork** the repository on GitHub.
 2. Go to **Settings → Actions → General → Workflow permissions** → select **Read and write permissions**.
+   - **Why:** The Deploy workflow needs `packages: write` to push images to GHCR and `contents: write` to auto-commit Helm values updates.
 3. Push to `main` or manually trigger workflows from the **Actions** tab.
-4. No secrets configuration needed — `GITHUB_TOKEN` is auto-provided by GitHub Actions.
+4. No secrets configuration needed — `GITHUB_TOKEN` is auto-provided by GitHub Actions with the permissions specified in each workflow file.
 
 ---
 
