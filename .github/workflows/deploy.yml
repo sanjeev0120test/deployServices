@@ -39,8 +39,8 @@ jobs:
       - name: Set image name
         id: meta
         run: |
-          IMAGE_NAME="${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.service }}"
-          IMAGE_NAME=$(echo "$IMAGE_NAME" | tr '[:upper:]' '[:lower:]')
+          REPO=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE_NAME="${{ env.REGISTRY }}/${REPO}/${{ matrix.service }}"
           echo "image=${IMAGE_NAME}" >> "$GITHUB_OUTPUT"
           echo "sha_tag=${IMAGE_NAME}:${{ github.sha }}" >> "$GITHUB_OUTPUT"
           echo "latest_tag=${IMAGE_NAME}:latest" >> "$GITHUB_OUTPUT"
@@ -69,8 +69,8 @@ jobs:
       - name: Compute image prefix
         id: prefix
         run: |
-          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          echo "prefix=${{ env.REGISTRY }}/${OWNER}" >> "$GITHUB_OUTPUT"
+          REPO=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "prefix=${{ env.REGISTRY }}/${REPO}" >> "$GITHUB_OUTPUT"
 
       - name: Update Helm values with new tags
         run: |
