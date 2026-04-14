@@ -5,8 +5,8 @@ fastifyService:
   name: fastify-service
   replicaCount: 2
   image:
-    repository: ghcr.io/sanjeev0120test/fastify-service
-    tag: 4228aeee75731bb6c4166268421ea86f0cc56fc0
+    repository: ghcr.io/sanjeev0120test/deployservices/fastify-service
+    tag: ccbe97aafe649684f9c50b59f3f458110d873c9e
     pullPolicy: IfNotPresent
   port: 3001
   resources:
@@ -39,8 +39,8 @@ nextjsService:
   name: nextjs-service
   replicaCount: 2
   image:
-    repository: ghcr.io/sanjeev0120test/nextjs-service
-    tag: 4228aeee75731bb6c4166268421ea86f0cc56fc0
+    repository: ghcr.io/sanjeev0120test/deployservices/nextjs-service
+    tag: ccbe97aafe649684f9c50b59f3f458110d873c9e
     pullPolicy: IfNotPresent
   port: 3002
   readOnlyRootFilesystem: false
@@ -74,8 +74,8 @@ fastapiService:
   name: fastapi-service
   replicaCount: 2
   image:
-    repository: ghcr.io/sanjeev0120test/fastapi-service
-    tag: 4228aeee75731bb6c4166268421ea86f0cc56fc0
+    repository: ghcr.io/sanjeev0120test/deployservices/fastapi-service
+    tag: ccbe97aafe649684f9c50b59f3f458110d873c9e
     pullPolicy: IfNotPresent
   port: 8000
   readOnlyRootFilesystem: false
