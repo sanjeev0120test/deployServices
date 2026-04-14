@@ -1,8 +1,10 @@
 # deployServices
 
-An open-source, end-to-end **microservices deployment reference architecture** that takes three independent REST APIs — built with Fastify (TypeScript), Next.js (React), and FastAPI (Python) — from source code through containerization, orchestration, observability, and automated delivery. The entire stack runs locally on a single machine and identically in CI/CD, demonstrating how production infrastructure patterns (multi-stage Docker builds, Helm-managed Kubernetes, distributed tracing, centralized logging, vulnerability scanning, and GitOps-style image promotion) work together as a cohesive system.
+Production-grade microservices deployment project, end-to-end **microservices deployment reference architecture** that takes three independent REST APIs — built with Fastify (TypeScript), Next.js and FastAPI (Python) from source code through containerization, orchestration, observability and automated delivery. The entire stack runs locally on a single machine and identically in CI/CD, demonstrating how production infrastructure patterns (multi-stage Docker builds, Helm-managed Kubernetes, distributed tracing, centralized logging, vulnerability scanning, and GitOps-style image promotion) work together as a cohesive system.
 
-**What this project solves:** Most deployment tutorials cover one layer in isolation — a Dockerfile here, a Helm chart there. This project wires them all together into a working pipeline: push code → lint → test → build → scan → E2E verify → push to registry → update manifests. Every tool has a clear role, every configuration is explained, and every workflow is tested.
+Built for hands-on practice with containerization, orchestration, observability and CI/CD. 3 independent stateless microservices - each in a different framework ship with a full Docker Compose stack, Kubernetes manifests, Helm charts, Terraform IaC, GitHub Actions pipelines and an end-to-end observability layer (traces, metrics, logs).
+
+**What this project solves:** This project wires different layers together into a working pipeline: push code → lint → test → build → scan → E2E verify → push to registry → update manifests. Every tool has a clear role, every configuration is explained and every workflow is tested.
 
 > **Tested and validated on Windows 10/11 + Docker Desktop + Kind and on GitHub Actions (Ubuntu runners). Works on macOS with minimal adjustments ([see macOS note](#macos-note)).**
 
