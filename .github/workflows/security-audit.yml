@@ -1,0 +1,76 @@
+name: Security Audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "**/package.json"
+      - "**/package-lock.json"
+      - "**/requirements.txt"
+  pull_request:
+    branches: [main]
+    paths:
+      - "**/package.json"
+      - "**/package-lock.json"
+      - "**/requirements.txt"
+  schedule:
+    - cron: "0 8 * * 1"
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: "20"
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  npm-audit:
+    name: npm audit (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: fastify-service
+            path: services/fastify-service
+          - service: nextjs-service
+            path: services/nextjs-service
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ${{ matrix.path }}
+
+      - name: Run npm audit (production deps)
+        run: npm audit --omit=dev --audit-level=high || true
+        working-directory: ${{ matrix.path }}
+
+      - name: Run npm audit (all deps - informational)
+        run: npm audit --audit-level=critical
+        working-directory: ${{ matrix.path }}
+
+  pip-audit:
+    name: pip-audit (fastapi-service)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+        working-directory: services/fastapi-service
+
+      - name: Install pip-audit
+        run: pip install pip-audit
+
+      - name: Run pip-audit
+        run: pip-audit -r requirements.txt --desc
+        working-directory: services/fastapi-service

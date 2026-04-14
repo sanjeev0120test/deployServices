@@ -1,0 +1,36 @@
+name: Dockerfile Lint
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "**/Dockerfile"
+  pull_request:
+    branches: [main]
+    paths:
+      - "**/Dockerfile"
+  workflow_dispatch:
+
+jobs:
+  hadolint:
+    name: Hadolint (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: fastify-service
+            path: services/fastify-service/Dockerfile
+          - service: nextjs-service
+            path: services/nextjs-service/Dockerfile
+          - service: fastapi-service
+            path: services/fastapi-service/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Hadolint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: ${{ matrix.path }}
+          failure-threshold: warning
+          ignore: DL3008,DL3013,DL3018

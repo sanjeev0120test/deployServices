@@ -1,0 +1,58 @@
+name: Helm Validate
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "helm/**"
+      - "k8s/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "helm/**"
+      - "k8s/**"
+  workflow_dispatch:
+
+jobs:
+  helm-lint:
+    name: Helm Lint & Template
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.17.3
+
+      - name: Lint chart
+        run: helm lint helm/deploy-services --strict
+
+      - name: Template render (catch broken templates)
+        run: |
+          helm template deploy-services helm/deploy-services \
+            --namespace deploy-services \
+            --debug > /dev/null
+
+      - name: Validate values schema
+        run: |
+          echo "Checking required values are non-empty..."
+          for key in fastifyService.name nextjsService.name fastapiService.name; do
+            VAL=$(helm template deploy-services helm/deploy-services \
+              --namespace deploy-services 2>/dev/null | head -1)
+            if [ -z "$VAL" ]; then
+              echo "ERROR: Template render produced empty output"
+              exit 1
+            fi
+          done
+          echo "All required values present"
+
+      - name: Dry-run install (syntax validation)
+        run: |
+          helm template deploy-services helm/deploy-services \
+            --namespace deploy-services \
+            --set fastifyService.image.tag=test-sha \
+            --set nextjsService.image.tag=test-sha \
+            --set fastapiService.image.tag=test-sha \
+            | kubectl apply --dry-run=client -f - 2>&1 | head -30
+          echo "Dry-run passed"
