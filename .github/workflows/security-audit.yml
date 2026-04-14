@@ -72,5 +72,5 @@ jobs:
         run: pip install pip-audit
 
       - name: Run pip-audit
-        run: pip-audit -r requirements.txt --desc
+        run: pip-audit -r requirements.txt --desc --strict
         working-directory: services/fastapi-service
