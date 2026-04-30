@@ -52,10 +52,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run actionlint
+      - name: Install actionlint
         run: |
-          bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.7/scripts/download-actionlint.bash) 1.7.7
-          ./actionlint -color
+          curl -fsSL -o /tmp/actionlint.tar.gz \
+            "https://github.com/rhysd/actionlint/releases/download/v1.7.7/actionlint_1.7.7_linux_amd64.tar.gz"
+          tar -xzf /tmp/actionlint.tar.gz -C /tmp actionlint
+
+      - name: Run actionlint
+        run: /tmp/actionlint -color
 
   shellcheck:
     name: shellcheck
