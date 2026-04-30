@@ -126,7 +126,7 @@ Built for hands-on practice with containerization, orchestration, observability 
 
 | Tool | Role |
 |------|------|
-| GitHub Actions (5 workflows) | CI, CD, Helm validation, Dockerfile lint, dependency security audit |
+| GitHub Actions (6 workflows) | CI, CD, Helm validation, Dockerfile lint, dependency security audit, platform guards |
 | GitHub Container Registry (GHCR) | OCI image registry; images tagged with git SHA + `latest` |
 | Trivy | Container image vulnerability scanning (CRITICAL + HIGH severity) |
 | Hadolint | Dockerfile best-practice linter (catches security/performance issues in Dockerfiles) |
@@ -164,12 +164,15 @@ Built for hands-on practice with containerization, orchestration, observability 
 
 ```
 deployServices/
-├── .github/workflows/
-│   ├── ci.yml                        # CI: lint → test → build → scan → E2E
-│   ├── deploy.yml                    # CD: build → push GHCR → update Helm values
-│   ├── helm-validate.yml             # Helm lint + template render + dry-run
-│   ├── docker-lint.yml               # Hadolint Dockerfile best-practice checks
-│   └── security-audit.yml            # npm audit + pip-audit (dependency CVEs)
+├── .github/
+│   ├── workflows/
+│   │   ├── ci.yml                        # CI: lint → test → build → scan → E2E
+│   │   ├── deploy.yml                    # CD: build → push GHCR → update Helm values
+│   │   ├── helm-validate.yml             # Helm lint + template render + dry-run
+│   │   ├── docker-lint.yml               # Hadolint Dockerfile best-practice checks
+│   │   ├── security-audit.yml            # npm audit + pip-audit (dependency CVEs)
+│   │   └── platform-guards.yml           # Terraform fmt/validate, Gitleaks, actionlint, shellcheck
+│   └── dependabot.yml                    # Automated dependency updates (npm, pip, Actions)
 │
 ├── services/
 │   ├── fastify-service/
@@ -231,6 +234,8 @@ deployServices/
 ├── docker-compose.yml                 # Full local stack (services + monitoring)
 ├── docker-compose.logging.yml         # Optional: Fluentd log driver overlay
 ├── Makefile                           # Unified CLI for all operations
+├── .actionlint.yaml                   # actionlint config: disables built-in shellcheck (runs as separate job)
+├── .gitleaksignore                    # Fingerprints of known-safe Gitleaks findings (false positives)
 └── .gitignore
 ```
 
@@ -253,6 +258,9 @@ deployServices/
 | Helm | `winget install Helm.Helm` | Kubernetes package manager |
 | Trivy *(optional)* | `winget install AquaSecurity.Trivy` | Container image vulnerability scanner |
 | Terraform *(optional)* | `winget install Hashicorp.Terraform` | Infrastructure as Code (alternative deploy path) |
+| Gitleaks *(optional, platform-check)* | [Download binary](https://github.com/gitleaks/gitleaks/releases) | Detects secrets and credentials accidentally committed to Git |
+| actionlint *(optional, platform-check)* | [Download binary](https://github.com/rhysd/actionlint/releases) | Lints GitHub Actions workflow YAML for syntax and logic errors |
+| ShellCheck *(optional, platform-check)* | `winget install koalaman.shellcheck` or via WSL: `sudo apt install shellcheck` | Static analysis for bash/sh scripts; catches bugs and portability issues |
 
 ### Step 2 — Verify Installations
 
@@ -439,10 +447,54 @@ make lint-fastapi       # Ruff     → Python (FastAPI)
 
 ### Platform guards (Terraform, secrets, Actions, shell)
 
-Run the same checks CI uses for infrastructure and repo hygiene (install [Terraform](https://developer.hashicorp.com/terraform/install), [Gitleaks](https://github.com/gitleaks/gitleaks), [actionlint](https://github.com/rhysd/actionlint), and [ShellCheck](https://www.shellcheck.net/) first; **Git Bash** or **WSL** on Windows):
+These checks mirror exactly what `.github/workflows/platform-guards.yml` runs in CI. Running them locally first means you catch issues before a push, not after a failed pipeline.
+
+> **Requires Git Bash or WSL on Windows.** Install [Terraform](https://developer.hashicorp.com/terraform/install), [Gitleaks](https://github.com/gitleaks/gitleaks/releases), [actionlint](https://github.com/rhysd/actionlint/releases), and [ShellCheck](https://www.shellcheck.net/) and ensure all are on your `PATH`.
+
+**Run all four checks in one command:**
 
 ```bash
 make platform-check
+# Runs: terraform fmt-check → terraform validate → shellcheck → actionlint → gitleaks
+```
+
+**Or run each check individually:**
+
+```bash
+# 1. Terraform format check
+#    WHY: Enforces canonical HCL formatting. 'terraform fmt -check' exits non-zero if any
+#         .tf file is not formatted, preventing unformatted IaC from reaching the repo.
+make terraform-fmt-check
+# Equivalent: terraform -chdir=terraform fmt -check -recursive
+
+# 2. Terraform validate
+#    WHY: Parses all .tf files and validates the configuration is internally consistent
+#         (correct resource types, required arguments present, valid references).
+#         Uses -backend=false so no real cloud credentials are needed.
+make terraform-validate
+# Equivalent: terraform -chdir=terraform init -backend=false -input=false
+#             terraform -chdir=terraform validate
+
+# 3. ShellCheck
+#    WHY: Static analysis for bash scripts. Catches common bugs: unquoted variables,
+#         incorrect use of [ vs [[, missing error handling, portability issues.
+#         Runs against the E2E test script and the Kind/deploy helper scripts.
+make shellcheck-local
+# Equivalent: shellcheck tests/e2e/run.sh scripts/deploy.sh scripts/setup-kind.sh
+
+# 4. actionlint
+#    WHY: Lints every .github/workflows/*.yml file for syntax errors, invalid action
+#         references, missing required inputs, and shell script errors inside 'run:' steps.
+#         Catches broken workflows before they reach GitHub Actions runners.
+make actionlint-local
+# Equivalent: actionlint
+
+# 5. Gitleaks
+#    WHY: Scans the full Git history for secrets, API keys, tokens, and credentials.
+#         Catches accidental commits of sensitive data before they reach the remote.
+#         .gitleaksignore suppresses known false positives (e.g. example strings in docs).
+make gitleaks-local
+# Equivalent: gitleaks detect --source . --redact --verbose
 ```
 
 ### E2E Tests
@@ -576,6 +628,21 @@ ghcr.io/sanjeev0120test/deployservices/fastify-service:latest
 |-----|--------------|-----|
 | **npm audit** (2x matrix) | `npm audit` on fastify-service and nextjs-service | Detects known CVEs in JavaScript dependencies |
 | **pip-audit** | `pip-audit -r requirements.txt` on fastapi-service | Detects known CVEs in Python dependencies |
+
+### 6. Platform Guards (`platform-guards.yml`)
+
+**Why:** Validates repository and infrastructure health on every push and pull request. Four parallel jobs run the same checks available locally via `make platform-check`, ensuring that IaC formatting, secret hygiene, workflow correctness, and shell script quality are enforced by CI even if a developer skips the local checks.
+
+**Triggers:** `push` to main, `pull_request` to main, `workflow_dispatch`
+
+| Job | Tool | What It Does | Why This Tool |
+|-----|------|--------------|---------------|
+| **terraform** | `hashicorp/setup-terraform` + `terraform fmt -check` + `terraform validate` | Checks formatting then validates all `.tf` files (no backend needed) | Catches IaC errors before any real infrastructure is touched; `fmt -check` enforces canonical HCL style |
+| **gitleaks** | `gitleaks/gitleaks-action@v2` | Scans full Git history for secrets and credentials | `GITLEAKS_ENABLE_COMMENTS: "false"` prevents 403 errors on forks; `.gitleaksignore` suppresses known false positives |
+| **actionlint** | Direct binary download from GitHub releases | Lints every `*.yml` workflow file for syntax, type, and logic errors | More thorough than schema validation alone; catches invalid action refs and shell script bugs inside `run:` steps |
+| **shellcheck** | Pre-installed on `ubuntu-latest` runners | Static analysis on `tests/e2e/run.sh`, `scripts/deploy.sh`, `scripts/setup-kind.sh` | Run as a dedicated job so its findings are distinct and reported separately from actionlint |
+
+> **Note on `.actionlint.yaml`:** actionlint has built-in shellcheck integration. It is disabled via `.actionlint.yaml` (`shellcheck: cmd: ""`) because shellcheck runs as its own job. This avoids duplicate findings and keeps each job's responsibility clear.
 
 ### Setting Up CI/CD for Your Fork
 
@@ -730,6 +797,12 @@ Each service is deployed with the following K8s resources via Helm:
 | `make k8s-delete` | Uninstall Helm release + delete namespace |
 | `make k8s-status` | Show pods, services, ingress |
 | `make k8s-e2e` | E2E tests against Kind Ingress |
+| `make platform-check` | Run all platform guards locally: Terraform, shellcheck, actionlint, gitleaks |
+| `make terraform-fmt-check` | Check all `.tf` files are formatted (`terraform fmt -check -recursive`) |
+| `make terraform-validate` | Init Terraform (no backend) then validate all `.tf` files |
+| `make shellcheck-local` | ShellCheck static analysis on E2E and helper shell scripts |
+| `make actionlint-local` | Lint all GitHub Actions workflow YAML files |
+| `make gitleaks-local` | Scan full Git history for secrets and credentials |
 | `make clean` | Remove build artifacts (dist, .next, __pycache__) |
 
 ---
