@@ -139,7 +139,7 @@ jobs:
           docker save ${{ matrix.service }}:ci-${{ github.sha }} -o /tmp/${{ matrix.service }}.tar
 
       - name: Upload image artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: image-${{ matrix.service }}
           path: /tmp/${{ matrix.service }}.tar
