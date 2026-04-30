@@ -1,0 +1,2 @@
+# Docs-only false positive: README previously contained curl examples with placeholder auth headers.
+66111da0faf5effe2704c970809ca980e0434c40:README.md:curl-auth-header:585

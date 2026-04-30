@@ -48,7 +48,7 @@ assert_body_contains() {
   local needle="$2"
   local body="$3"
 
-  if echo "$body" | grep -q "$needle"; then
+  if grep -qF -- "$needle" <<< "$body"; then
     echo "  PASS: $description (body contains '$needle')"
     PASS=$((PASS + 1))
   else
@@ -67,10 +67,6 @@ http_get_body() {
 
 http_post() {
   curl -s -o /dev/null -w "%{http_code}" --max-time 10 -X POST -H "Content-Type: application/json" -d "$2" "$1" 2>/dev/null || echo "000"
-}
-
-http_post_body() {
-  curl -s --max-time 10 -X POST -H "Content-Type: application/json" -d "$2" "$1" 2>/dev/null || echo ""
 }
 
 echo "============================================="

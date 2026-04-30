@@ -130,6 +130,31 @@ k8s-status: ## Show pod and ingress status
 	kubectl get pods,svc,ingress -n $(NAMESPACE)
 
 # ====================================================================
+# Platform guards (mirror .github/workflows/platform-guards.yml locally)
+# ====================================================================
+.PHONY: platform-check terraform-fmt-check terraform-validate gitleaks-local actionlint-local shellcheck-local
+platform-check: terraform-fmt-check terraform-validate shellcheck-local actionlint-local gitleaks-local ## Run Terraform fmt/validate, shellcheck, actionlint, gitleaks (requires tools on PATH; use Git Bash/WSL on Windows)
+
+terraform-fmt-check: ## Terraform fmt check (terraform/ directory)
+	terraform -chdir=terraform fmt -check -recursive
+
+terraform-validate: ## Terraform init (no backend) and validate
+	terraform -chdir=terraform init -backend=false -input=false
+	terraform -chdir=terraform validate
+
+gitleaks-local: ## Scan repo for secrets (install: https://github.com/gitleaks/gitleaks )
+	@command -v gitleaks >/dev/null 2>&1 || { echo "gitleaks not found. Install: https://github.com/gitleaks/gitleaks#installing"; exit 1; }
+	gitleaks detect --source . --redact --verbose
+
+actionlint-local: ## Lint GitHub Actions workflows (install: https://github.com/rhysd/actionlint )
+	@command -v actionlint >/dev/null 2>&1 || { echo "actionlint not found. Install: https://github.com/rhysd/actionlint"; exit 1; }
+	actionlint
+
+shellcheck-local: ## Shellcheck scripts used for E2E and Kind
+	@command -v shellcheck >/dev/null 2>&1 || { echo "shellcheck not found. Install: https://www.shellcheck.net/"; exit 1; }
+	shellcheck tests/e2e/run.sh scripts/deploy.sh scripts/setup-kind.sh
+
+# ====================================================================
 # Clean
 # ====================================================================
 .PHONY: clean

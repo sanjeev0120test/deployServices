@@ -437,6 +437,14 @@ make lint-nextjs        # ESLint   → TypeScript (Next.js)
 make lint-fastapi       # Ruff     → Python (FastAPI)
 ```
 
+### Platform guards (Terraform, secrets, Actions, shell)
+
+Run the same checks CI uses for infrastructure and repo hygiene (install [Terraform](https://developer.hashicorp.com/terraform/install), [Gitleaks](https://github.com/gitleaks/gitleaks), [actionlint](https://github.com/rhysd/actionlint), and [ShellCheck](https://www.shellcheck.net/) first; **Git Bash** or **WSL** on Windows):
+
+```bash
+make platform-check
+```
+
 ### E2E Tests
 
 The E2E test suite (`tests/e2e/run.sh`) performs the following validations against live running services:
@@ -460,7 +468,7 @@ make k8s-e2e            # Against Kind Ingress   (localhost/fastify, /nextjs, /f
 
 ## CI/CD — GitHub Actions
 
-This project ships with **5 GitHub Actions workflows**, each serving a distinct purpose. All support `workflow_dispatch` for manual runs from the Actions tab.
+This project ships with **six GitHub Actions workflows**, each serving a distinct purpose. All support `workflow_dispatch` for manual runs from the Actions tab.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -474,13 +482,13 @@ This project ships with **5 GitHub Actions workflows**, each serving a distinct 
 │  │ E2E        │  │ update Helm │  │ + dry-run   │  │ Dockerfiles │       │
 │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘       │
 │                                                                             │
-│  ┌─────────────────────┐                                                    │
-│  │ security-audit.yml  │                                                    │
-│  │                     │                                                    │
-│  │ npm audit (2x)      │                                                    │
-│  │ pip-audit (1x)      │                                                    │
-│  │ + weekly schedule   │                                                    │
-│  └─────────────────────┘                                                    │
+│  ┌─────────────────────┐   ┌─────────────────────┐                      │
+│  │ security-audit.yml  │   │ platform-guards.yml │                      │
+│  │                     │   │                     │                      │
+│  │ npm audit (2x)      │   │ Terraform fmt/      │                      │
+│  │ pip-audit (1x)      │   │ validate, Gitleaks, │                      │
+│  │ + weekly schedule   │   │ actionlint, shellck │                      │
+│  └─────────────────────┘   └─────────────────────┘                      │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -584,23 +592,7 @@ ghcr.io/sanjeev0120test/deployservices/fastify-service:latest
 | **Open a Pull Request** | Create PR targeting `main` | CI + any path-matched workflows |
 | **Manual (GitHub UI)** | Actions tab → select workflow → "Run workflow" → choose branch → click "Run workflow" | Any single workflow |
 | **Manual (GitHub CLI)** | `gh workflow run ci.yml --ref main` | Any single workflow |
-| **Manual (curl)** | See below | Any single workflow |
-
-```bash
-# Trigger any workflow manually via GitHub API (replace WORKFLOW_FILE and TOKEN)
-curl -X POST \
-  -H "Authorization: Bearer YOUR_GITHUB_TOKEN" \
-  -H "Accept: application/vnd.github+json" \
-  https://api.github.com/repos/OWNER/REPO/actions/workflows/WORKFLOW_FILE/dispatches \
-  -d '{"ref":"main"}'
-
-# Example: trigger CI workflow
-curl -X POST \
-  -H "Authorization: Bearer $GITHUB_TOKEN" \
-  -H "Accept: application/vnd.github+json" \
-  https://api.github.com/repos/sanjeev0120test/deployServices/actions/workflows/ci.yml/dispatches \
-  -d '{"ref":"main"}'
-```
+| **Manual (curl)** | GitHub REST API: [Create a workflow dispatch event](https://docs.github.com/en/rest/actions/workflows#create-a-workflow-dispatch-event). Send a `POST` to `/repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches` with JSON body `{"ref":"<branch>"}` and authenticate per GitHub docs (PAT or GitHub App token). | Any single workflow |
 
 ---
 

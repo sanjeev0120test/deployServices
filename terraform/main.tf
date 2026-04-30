@@ -2,7 +2,7 @@ resource "kubernetes_namespace" "services" {
   metadata {
     name = var.namespace
     labels = {
-      "app.kubernetes.io/part-of"   = "deploy-services"
+      "app.kubernetes.io/part-of"    = "deploy-services"
       "app.kubernetes.io/managed-by" = "terraform"
     }
   }
