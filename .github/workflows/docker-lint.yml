@@ -26,7 +26,7 @@ jobs:
           - service: fastapi-service
             path: services/fastapi-service/Dockerfile
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Run Hadolint
         uses: hadolint/hadolint-action@v3.1.0

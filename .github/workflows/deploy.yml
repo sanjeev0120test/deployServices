@@ -27,7 +27,7 @@ jobs:
           - service: fastapi-service
             path: services/fastapi-service
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -62,7 +62,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-and-push]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
