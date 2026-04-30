@@ -59,7 +59,11 @@ jobs:
           tar -xzf /tmp/actionlint.tar.gz -C /tmp actionlint
 
       - name: Run actionlint
-        run: /tmp/actionlint -color
+        run: >-
+          /tmp/actionlint
+          -shellcheck=
+          -format
+          '{{range $}}::error file={{.Filepath}},line={{.Line}},col={{.Column}}::{{.Message}} [{{.RuleID}}]%0A{{end}}'
 
   shellcheck:
     name: shellcheck
