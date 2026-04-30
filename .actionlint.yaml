@@ -1,0 +1,5 @@
+shellcheck:
+  # Shellcheck is run as a dedicated job in platform-guards.yml.
+  # Disable actionlint's built-in shellcheck integration to avoid redundant and
+  # style-only findings (SC2129) in existing workflow inline scripts.
+  cmd: ""
