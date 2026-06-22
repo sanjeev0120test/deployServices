@@ -29,7 +29,7 @@ jobs:
             path: services/fastapi-service
             lang: python
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Node.js
         if: matrix.lang == 'node'
@@ -84,7 +84,7 @@ jobs:
             lang: python
             cmd: python -m pytest tests/ -v
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Node.js
         if: matrix.lang == 'node'
@@ -129,7 +129,7 @@ jobs:
           - service: fastapi-service
             path: services/fastapi-service
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Build Docker image
         run: docker build -t ${{ matrix.service }}:ci-${{ github.sha }} ${{ matrix.path }}
@@ -157,7 +157,7 @@ jobs:
           - service: nextjs-service
           - service: fastapi-service
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Download image artifact
         uses: actions/download-artifact@v4
@@ -181,7 +181,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Download all image artifacts
         uses: actions/download-artifact@v4
