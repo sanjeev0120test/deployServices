@@ -19,7 +19,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
-- package-ecosystem: docker
+
+  - package-ecosystem: docker
     directory: /services/fastapi-service
     schedule:
       interval: weekly
