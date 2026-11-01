@@ -1,4 +1,4 @@
-resource "kubernetes_namespace" "services" {
+resource "kubernetes_namespace_v1" "services" {
   metadata {
     name = var.namespace
     labels = {
@@ -11,7 +11,7 @@ resource "kubernetes_namespace" "services" {
 resource "helm_release" "deploy_services" {
   name             = "deploy-services"
   chart            = var.helm_chart_path
-  namespace        = kubernetes_namespace.services.metadata[0].name
+  namespace        = kubernetes_namespace_v1.services.metadata[0].name
   create_namespace = false
   wait             = true
   timeout          = 120
