@@ -17,6 +17,7 @@ permissions:
 
 jobs:
   lint:
+    timeout-minutes: 2
     name: Lint (${{ matrix.service }})
     runs-on: ubuntu-latest
     strategy:
@@ -69,6 +70,7 @@ jobs:
         working-directory: ${{ matrix.path }}
 
   test:
+    timeout-minutes: 2
     name: Test (${{ matrix.service }})
     runs-on: ubuntu-latest
     strategy:
@@ -119,6 +121,7 @@ jobs:
         working-directory: ${{ matrix.path }}
 
   build:
+    timeout-minutes: 2
     name: Build (${{ matrix.service }})
     runs-on: ubuntu-latest
     needs: [lint, test]
@@ -150,6 +153,7 @@ jobs:
           retention-days: 1
 
   scan:
+    timeout-minutes: 2
     name: Scan (${{ matrix.service }})
     runs-on: ubuntu-latest
     needs: [build]
@@ -181,6 +185,7 @@ jobs:
           severity: CRITICAL,HIGH
 
   e2e:
+    timeout-minutes: 2
     name: E2E Tests
     runs-on: ubuntu-latest
     needs: [build]
