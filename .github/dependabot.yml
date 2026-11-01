@@ -55,6 +55,16 @@ updates:
         update-types:
           - "version-update:semver-major"
 
+      - dependency-name: "python"
+        update-types:
+          - "version-update:semver-minor"
+      - dependency-name: "node"
+        update-types:
+          - "version-update:semver-minor"
+      - dependency-name: "golang"
+        update-types:
+          - "version-update:semver-minor"
+
   - package-ecosystem: docker
     directory: /services/fastify-service
     schedule:
@@ -66,6 +76,16 @@ updates:
         update-types:
           - "version-update:semver-major"
 
+      - dependency-name: "python"
+        update-types:
+          - "version-update:semver-minor"
+      - dependency-name: "node"
+        update-types:
+          - "version-update:semver-minor"
+      - dependency-name: "golang"
+        update-types:
+          - "version-update:semver-minor"
+
   - package-ecosystem: docker
     directory: /services/nextjs-service
     schedule:
@@ -76,6 +96,16 @@ updates:
       - dependency-name: "*"
         update-types:
           - "version-update:semver-major"
+
+      - dependency-name: "python"
+        update-types:
+          - "version-update:semver-minor"
+      - dependency-name: "node"
+        update-types:
+          - "version-update:semver-minor"
+      - dependency-name: "golang"
+        update-types:
+          - "version-update:semver-minor"
 
   - package-ecosystem: terraform
     directory: /terraform
