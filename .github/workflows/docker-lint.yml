@@ -11,6 +11,9 @@ on:
       - "**/Dockerfile"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   hadolint:
     name: Hadolint (${{ matrix.service }})
@@ -26,10 +29,10 @@ jobs:
           - service: fastapi-service
             path: services/fastapi-service/Dockerfile
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Run Hadolint
-        uses: hadolint/hadolint-action@v3.1.0
+        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
         with:
           dockerfile: ${{ matrix.path }}
           failure-threshold: warning
