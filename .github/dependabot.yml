@@ -19,3 +19,22 @@ updates:
     directory: /
     schedule:
       interval: weekly
+- package-ecosystem: docker
+    directory: /services/fastapi-service
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker
+    directory: /services/fastify-service
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker
+    directory: /services/nextjs-service
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: terraform
+    directory: /terraform
+    schedule:
+      interval: weekly
