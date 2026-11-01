@@ -18,6 +18,7 @@ permissions:
 
 jobs:
   helm-lint:
+    timeout-minutes: 2
     name: Helm Lint & Template
     runs-on: ubuntu-latest
     steps:

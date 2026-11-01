@@ -26,6 +26,7 @@ permissions:
 
 jobs:
   npm-audit:
+    timeout-minutes: 2
     name: npm audit (${{ matrix.service }})
     runs-on: ubuntu-latest
     strategy:
@@ -57,6 +58,7 @@ jobs:
         working-directory: ${{ matrix.path }}
 
   pip-audit:
+    timeout-minutes: 2
     name: pip-audit (fastapi-service)
     runs-on: ubuntu-latest
     steps:

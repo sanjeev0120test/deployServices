@@ -16,6 +16,7 @@ permissions:
 
 jobs:
   hadolint:
+    timeout-minutes: 2
     name: Hadolint (${{ matrix.service }})
     runs-on: ubuntu-latest
     strategy:
