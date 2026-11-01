@@ -9,7 +9,7 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from app.routes.health import router as health_router
 from app.routes.health import set_ready
 from app.routes.orders import router as orders_router
-from app.telemetry import init_telemetry
+from app.telemetry import init_telemetry, shutdown_telemetry
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO").upper(),
@@ -24,17 +24,18 @@ async def lifespan(application: FastAPI):
     logger.info("FastAPI service started")
     yield
     set_ready(False)
+    shutdown_telemetry()
     logger.info("FastAPI service shutting down")
 
 
 app = FastAPI(title="FastAPI Order Service", version="1.0.0", lifespan=lifespan)
 
-init_telemetry(app)
-
 Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 
 app.include_router(health_router)
 app.include_router(orders_router)
+
+init_telemetry(app)
 
 
 @app.exception_handler(Exception)

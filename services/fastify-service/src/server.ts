@@ -1,4 +1,5 @@
-import { initTelemetry } from "./telemetry";
+import { trace } from "@opentelemetry/api";
+import { initTelemetry, shutdownTelemetry } from "./telemetry";
 initTelemetry();
 
 import Fastify from "fastify";
@@ -34,6 +35,15 @@ async function main() {
   await fastify.register(healthRoutes);
   await fastify.register(itemRoutes);
 
+  fastify.addHook("preHandler", async (request) => {
+    const span = trace.getActiveSpan();
+    const route = request.routeOptions?.url;
+    if (span && route) {
+      span.updateName(`${request.method} ${route}`);
+      span.setAttribute("http.route", route);
+    }
+  });
+
   try {
     await fastify.listen({ port: PORT, host: HOST });
     setReady(true);
@@ -47,6 +57,7 @@ async function main() {
     setReady(false);
     fastify.log.info("Shutting down gracefully...");
     await fastify.close();
+    await shutdownTelemetry();
     process.exit(0);
   };
 

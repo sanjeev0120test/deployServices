@@ -10,7 +10,15 @@ services:
       - PORT=3001
       - NODE_ENV=production
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - OTEL_TRACES_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=otlp
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_PROPAGATORS=tracecontext,baggage
       - OTEL_SERVICE_NAME=fastify-service
+      - OTEL_SERVICE_VERSION=1.0.0
+      - DEPLOYMENT_ENVIRONMENT=local
+      - OTEL_RESOURCE_ATTRIBUTES=service.namespace=deploy-services,service.version=1.0.0,deployment.environment.name=local
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
       interval: 10s
@@ -32,7 +40,15 @@ services:
       - PORT=3002
       - NODE_ENV=production
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - OTEL_TRACES_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=otlp
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_PROPAGATORS=tracecontext,baggage
       - OTEL_SERVICE_NAME=nextjs-service
+      - OTEL_SERVICE_VERSION=1.0.0
+      - DEPLOYMENT_ENVIRONMENT=local
+      - OTEL_RESOURCE_ATTRIBUTES=service.namespace=deploy-services,service.version=1.0.0,deployment.environment.name=local
       - NEXT_PUBLIC_BASE_URL=http://localhost:3002
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3002/api/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
@@ -54,7 +70,15 @@ services:
     environment:
       - PORT=8000
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - OTEL_TRACES_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=otlp
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_PROPAGATORS=tracecontext,baggage
       - OTEL_SERVICE_NAME=fastapi-service
+      - OTEL_SERVICE_VERSION=1.0.0
+      - DEPLOYMENT_ENVIRONMENT=local
+      - OTEL_RESOURCE_ATTRIBUTES=service.namespace=deploy-services,service.version=1.0.0,deployment.environment.name=local
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 10s
