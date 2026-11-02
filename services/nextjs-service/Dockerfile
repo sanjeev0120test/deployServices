@@ -16,6 +16,8 @@ WORKDIR /app
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
+# Standalone tracing misses this dependency of the HTTP instrumentation.
+COPY --from=builder /app/node_modules/forwarded-parse ./node_modules/forwarded-parse
 
 USER appuser
 EXPOSE 3002
