@@ -210,10 +210,11 @@ jobs:
       - name: Wait for services to be healthy
         run: |
           echo "Waiting for services..."
-          for i in $(seq 1 40); do
+          for i in $(seq 1 12); do
             HEALTHY=0
             for url in http://localhost:3001/health http://localhost:3002/api/health http://localhost:8000/health; do
-              STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "$url" 2>/dev/null || echo "000")
+              STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 "$url" 2>/dev/null || echo "000")
+              echo "  $url $STATUS"
               if [ "$STATUS" = "200" ]; then
                 HEALTHY=$((HEALTHY + 1))
               fi
@@ -222,8 +223,8 @@ jobs:
               echo "All 3 services healthy!"
               break
             fi
-            echo "  Attempt $i/40 - $HEALTHY/3 healthy"
-            sleep 5
+            echo "  Attempt $i/12 - $HEALTHY/3 healthy"
+            sleep 3
           done
           if [ "$HEALTHY" -lt 3 ]; then
             echo "ERROR: Not all services became healthy"
