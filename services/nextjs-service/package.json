@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start -p 3002",
     "test": "jest --passWithNoTests",
-    "lint": "eslint ."
+    "lint": "ESLINT_USE_FLAT_CONFIG=false eslint ."
   },
   "dependencies": {
     "@opentelemetry/api": "1.10.0",

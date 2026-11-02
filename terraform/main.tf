@@ -16,33 +16,30 @@ resource "helm_release" "deploy_services" {
   wait             = true
   timeout          = 120
 
-  set {
-    name  = "fastifyService.image.tag"
-    value = var.image_tag
-  }
-
-  set {
-    name  = "fastifyService.replicaCount"
-    value = var.fastify_replicas
-  }
-
-  set {
-    name  = "nextjsService.image.tag"
-    value = var.image_tag
-  }
-
-  set {
-    name  = "nextjsService.replicaCount"
-    value = var.nextjs_replicas
-  }
-
-  set {
-    name  = "fastapiService.image.tag"
-    value = var.image_tag
-  }
-
-  set {
-    name  = "fastapiService.replicaCount"
-    value = var.fastapi_replicas
-  }
+  set = [
+    {
+      name  = "fastifyService.image.tag"
+      value = var.image_tag
+    },
+    {
+      name  = "fastifyService.replicaCount"
+      value = var.fastify_replicas
+    },
+    {
+      name  = "nextjsService.image.tag"
+      value = var.image_tag
+    },
+    {
+      name  = "nextjsService.replicaCount"
+      value = var.nextjs_replicas
+    },
+    {
+      name  = "fastapiService.image.tag"
+      value = var.image_tag
+    },
+    {
+      name  = "fastapiService.replicaCount"
+      value = var.fastapi_replicas
+    },
+  ]
 }

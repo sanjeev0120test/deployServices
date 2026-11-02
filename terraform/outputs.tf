@@ -1,6 +1,6 @@
 output "namespace" {
   description = "Kubernetes namespace where services are deployed"
-  value       = kubernetes_namespace.services.metadata[0].name
+  value       = kubernetes_namespace_v1.services.metadata[0].name
 }
 
 output "helm_release_status" {
