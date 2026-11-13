@@ -4,7 +4,7 @@ uvicorn[standard]==0.54.0
 pydantic==2.14.2
 prometheus-fastapi-instrumentator==8.1.0
 opentelemetry-api==1.45.1
-opentelemetry-sdk==1.45.1
+opentelemetry-sdk==1.45.2
 opentelemetry-instrumentation-fastapi==0.66b1
 opentelemetry-exporter-otlp-proto-http==1.45.1
 opentelemetry-instrumentation-logging==0.66b1
