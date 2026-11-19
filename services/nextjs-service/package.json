@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@opentelemetry/api": "1.10.0",
-    "@opentelemetry/instrumentation-http": "0.300.0",
+    "@opentelemetry/instrumentation-http": "0.301.1",
     "@opentelemetry/resources": "3.0.0",
     "@opentelemetry/sdk-node": "0.300.0",
     "next": "^16.4.5",
